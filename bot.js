@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 const axios = require('axios');
 const io = require('socket.io-client');
+const { ConvexHttpClient } = require('convex/browser');
 require('dotenv').config();
 
 // Initialize Discord client with necessary intents
@@ -16,77 +17,12 @@ const client = new Client({
 // Connect to our web server's Socket.IO
 const socket = io('http://localhost:' + (process.env.PORT || 3000));
 
-// Store active music connections and queues
-const musicConnections = new Map();
+// Initialize Convex client
+const convex = new ConvexHttpClient(process.env.CONVEX_URL);
 
-// Track server statistics
-class ServerStats {
-    constructor(guildId) {
-        this.guildId = guildId;
-        this.stats = {
-            songsPlayed: 0,
-            activeUsers: 0,
-            playlistCount: 0,
-            totalPlaytime: 0,
-            memberCount: 0,
-            status: 'Bot Active'
-        };
-        this.startTime = Date.now();
-        this.currentTrack = null;
-        this.queue = [];
-    }
-
-    updateStats() {
-        const guild = client.guilds.cache.get(this.guildId);
-        if (!guild) return;
-
-        this.stats.memberCount = guild.memberCount;
-        this.stats.activeUsers = guild.members.cache.filter(member => 
-            member.presence?.status === 'online'
-        ).size;
-
-        // Calculate total playtime
-        this.stats.totalPlaytime = ((Date.now() - this.startTime) / 3600000).toFixed(1);
-
-        // Emit updated stats
-        socket.emit('bot-stats-update', {
-            serverId: this.guildId,
-            stats: this.stats
-        });
-    }
-
-    addSongPlayed() {
-        this.stats.songsPlayed++;
-        this.updateStats();
-    }
-
-    setCurrentTrack(track) {
-        this.currentTrack = track;
-        socket.emit('bot-track-update', {
-            serverId: this.guildId,
-            track: track
-        });
-    }
-
-    addToQueue(track) {
-        this.queue.push(track);
-        return this.queue.length;
-    }
-
-    clearQueue() {
-        this.queue = [];
-        this.currentTrack = null;
-        this.setCurrentTrack(null);
-    }
-}
-
-// Initialize stats for a server
-function initializeServerStats(guildId) {
-    if (!musicConnections.has(guildId)) {
-        musicConnections.set(guildId, new ServerStats(guildId));
-        socket.emit('bot-server-join', guildId);
-    }
-    return musicConnections.get(guildId);
+// Function to initialize server stats in Convex
+async function initializeServerStats(guildId) {
+    // TODO: Implement Convex mutation to create a new server document if one doesn't exist
 }
 
 // Handle bot commands from dashboard

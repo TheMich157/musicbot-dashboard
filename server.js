@@ -24,6 +24,39 @@ app.use(session({
 const connectedClients = new Map();
 const serverData = new Map();
 
+// Bot status tracking
+const botStatus = {
+    connectedServers: new Set(),
+    activeTracks: new Map(),
+    serverStats: new Map()
+};
+
+// API Routes for bot data
+app.get('/api/servers', (req, res) => {
+    const servers = Array.from(botStatus.connectedServers).map(serverId => {
+        const stats = botStatus.serverStats.get(serverId) || {};
+        return {
+            id: serverId,
+            stats: stats,
+            currentTrack: botStatus.activeTracks.get(serverId)
+        };
+    });
+    res.json(servers);
+});
+
+app.get('/api/server/:serverId', (req, res) => {
+    const { serverId } = req.params;
+    if (!botStatus.connectedServers.has(serverId)) {
+        return res.status(404).json({ error: 'Server not found' });
+    }
+    
+    res.json({
+        id: serverId,
+        stats: botStatus.serverStats.get(serverId) || {},
+        currentTrack: botStatus.activeTracks.get(serverId)
+    });
+});
+
 // Discord OAuth routes
 app.get('/auth/discord', (req, res) => {
     const baseUrl = 'https://discord.com/api/oauth2/authorize';
@@ -97,9 +130,9 @@ io.on('connection', (socket) => {
         socket.join(serverId);
         if (!serverData.has(serverId)) {
             serverData.set(serverId, {
-                currentTrack: null,
+                currentTrack: botStatus.activeTracks.get(serverId) || null,
                 queue: [],
-                stats: {
+                stats: botStatus.serverStats.get(serverId) || {
                     songsPlayed: 0,
                     activeUsers: 0,
                     playlistCount: 0,
@@ -120,38 +153,68 @@ io.on('connection', (socket) => {
         
         // Emit initial server data
         socket.emit('server-data', serverData.get(serverId));
-        
-        // Start emitting server stats updates
-        const statsInterval = setInterval(() => {
-            const server = serverData.get(serverId);
-            if (server) {
-                // Update stats with real data from bot
-                server.stats.songsPlayed += Math.floor(Math.random() * 5); // Temporary random increment
-                server.stats.activeUsers = Math.floor(Math.random() * 100) + 50; // Temporary random number
-                server.stats.totalPlaytime += 0.1;
-                
-                // Emit updated stats
-                io.to(serverId).emit('server-stats', server.stats);
-            }
-        }, 5000); // Update every 5 seconds
+    });
 
-        // Clean up interval on disconnect
-        socket.on('disconnect', () => {
-            clearInterval(statsInterval);
+    // Handle bot events
+    socket.on('bot-server-join', (serverId) => {
+        botStatus.connectedServers.add(serverId);
+        io.emit('server-update', { type: 'join', serverId });
+    });
+
+    socket.on('bot-server-leave', (serverId) => {
+        botStatus.connectedServers.delete(serverId);
+        botStatus.activeTracks.delete(serverId);
+        botStatus.serverStats.delete(serverId);
+        io.emit('server-update', { type: 'leave', serverId });
+    });
+
+    socket.on('bot-track-update', (data) => {
+        const { serverId, track } = data;
+        botStatus.activeTracks.set(serverId, track);
+        io.to(serverId).emit('track-update', track);
+    });
+
+    socket.on('bot-stats-update', (data) => {
+        const { serverId, stats } = data;
+        botStatus.serverStats.set(serverId, stats);
+        io.to(serverId).emit('server-stats', stats);
+    });
+
+    // Handle client commands
+    socket.on('play-track', async (data) => {
+        const { serverId, query } = data;
+        try {
+            // Forward play command to bot
+            io.emit('bot-command', {
+                type: 'play',
+                serverId,
+                data: { query }
+            });
+        } catch (error) {
+            socket.emit('error', { message: 'Failed to play track' });
+        }
+    });
+
+    socket.on('stop-playback', (serverId) => {
+        io.emit('bot-command', {
+            type: 'stop',
+            serverId
         });
     });
 
-    socket.on('update-track', (data) => {
-        const { serverId, track } = data;
-        if (serverData.has(serverId)) {
-            const server = serverData.get(serverId);
-            server.currentTrack = track;
-            io.to(serverId).emit('track-update', track);
-        }
+    socket.on('skip-track', (serverId) => {
+        io.emit('bot-command', {
+            type: 'skip',
+            serverId
+        });
     });
 
     socket.on('disconnect', () => {
         console.log('Client disconnected');
+        // Clear any intervals that might be running for this socket
+        if (socket.statsInterval) {
+            clearInterval(socket.statsInterval);
+        }
     });
 });
 

@@ -1,7 +1,6 @@
 const { Client, GatewayIntentBits, ActivityType } = require('discord.js');
 const axios = require('axios');
 const io = require('socket.io-client');
-const { ConvexHttpClient } = require('convex/browser');
 require('dotenv').config();
 
 // Initialize Discord client with necessary intents
@@ -17,12 +16,13 @@ const client = new Client({
 // Connect to our web server's Socket.IO
 const socket = io('http://localhost:' + (process.env.PORT || 3000));
 
-// Initialize Convex client
-const convex = new ConvexHttpClient(process.env.CONVEX_URL);
+// Initialize stats for a server
+function initializeServerStats(guildId) {
+    // Emit bot-server-join event to notify dashboard
+    socket.emit('bot-server-join', guildId);
+}
 
-// Function to initialize server stats in Convex
-async function initializeServerStats(guildId) {
-    // TODO: Implement Convex mutation to create a new server document if one doesn't exist
+// Update server stats and emit real-time events
 }
 
 // Handle bot commands from dashboard

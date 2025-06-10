@@ -207,6 +207,36 @@ socket.on('connect', () => {
     }
 });
 
+// Handle server stats updates
+socket.on('server-stats', (stats) => {
+    // Update server info
+    const serverStats = document.getElementById('server-stats');
+    if (serverStats) {
+        serverStats.textContent = `${stats.memberCount} members • ${stats.status}`;
+    }
+
+    // Update stat cards
+    const songsPlayed = document.getElementById('songs-played');
+    if (songsPlayed) {
+        songsPlayed.textContent = stats.songsPlayed.toLocaleString();
+    }
+
+    const activeUsers = document.getElementById('active-users');
+    if (activeUsers) {
+        activeUsers.textContent = stats.activeUsers.toLocaleString();
+    }
+
+    const playlistCount = document.getElementById('playlist-count');
+    if (playlistCount) {
+        playlistCount.textContent = stats.playlistCount.toLocaleString();
+    }
+
+    const totalPlaytime = document.getElementById('total-playtime');
+    if (totalPlaytime) {
+        totalPlaytime.textContent = `${stats.totalPlaytime.toFixed(1)}h`;
+    }
+});
+
 socket.on('track-update', (track) => {
     state.currentTrack = track;
     updateNowPlaying(track);

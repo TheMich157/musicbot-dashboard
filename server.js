@@ -184,28 +184,7 @@ app.post('/api/platform/toggle', requireAuth, (req, res) => {
     res.json({ success: true });
 });
 
-// Add mock server data for testing
-app.get('/api/mock/server', (req, res) => {
-    const mockServer = {
-        id: '123456789',
-        name: 'Music Galaxy',
-        stats: {
-            songsPlayed: 2847,
-            activeUsers: 156,
-            playlistCount: 48,
-            totalPlaytime: 120.5,
-            memberCount: 1234,
-            status: 'Bot Active'
-        },
-        currentTrack: {
-            title: 'Blinding Lights',
-            artist: 'The Weeknd',
-            duration: 200,
-            progress: 45
-        }
-    };
-    res.json(mockServer);
-});
+// Removed mock server data endpoint to use real-time data from bot
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

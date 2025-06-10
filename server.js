@@ -13,6 +13,11 @@ const io = socketIo(server);
 // Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve index.html for all routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -100,14 +105,25 @@ app.get('/auth/discord/callback', async (req, res) => {
 // API Routes
 app.get('/api/user', (req, res) => {
     if (!req.session.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        // Return empty user object instead of error
+        return res.json({ 
+            authenticated: false,
+            user: null
+        });
     }
-    res.json(req.session.user);
+    res.json({
+        authenticated: true,
+        user: req.session.user
+    });
 });
 
 app.post('/api/playlist', (req, res) => {
     if (!req.session.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.json({ 
+            success: false, 
+            error: 'Authentication required',
+            requiresAuth: true 
+        });
     }
     // TODO: Implement playlist creation logic
     res.json({ success: true });
@@ -115,11 +131,38 @@ app.post('/api/playlist', (req, res) => {
 
 app.post('/api/platform/toggle', (req, res) => {
     if (!req.session.user) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.json({ 
+            success: false, 
+            error: 'Authentication required',
+            requiresAuth: true 
+        });
     }
     const { platform, enabled } = req.body;
     // TODO: Implement platform toggle logic
     res.json({ success: true });
+});
+
+// Add mock server data for testing
+app.get('/api/mock/server', (req, res) => {
+    const mockServer = {
+        id: '123456789',
+        name: 'Music Galaxy',
+        stats: {
+            songsPlayed: 2847,
+            activeUsers: 156,
+            playlistCount: 48,
+            totalPlaytime: 120.5,
+            memberCount: 1234,
+            status: 'Bot Active'
+        },
+        currentTrack: {
+            title: 'Blinding Lights',
+            artist: 'The Weeknd',
+            duration: 200,
+            progress: 45
+        }
+    };
+    res.json(mockServer);
 });
 
 // Socket.IO connection handling
@@ -224,7 +267,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = 8000;  // Use port 8000 as specified
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

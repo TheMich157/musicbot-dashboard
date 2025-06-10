@@ -717,7 +717,7 @@
                             <div class="platform-stats">
                                 <p style="color: var(--text-secondary); font-size: 0.9rem;">
                                     <i class="fas fa-play-circle" style="margin-inline-end: 0.5rem;"></i>
-                                    1,234 songs played this week
+                                    
                                 </p>
                             </div>
                         </div>
@@ -1044,24 +1044,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/app.js" defer></script>
-    <script>
-        
-        // Navigation functionality
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section-content').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Show selected section
-            document.getElementById(sectionName + '-section').style.display = 'block';
-            
-            // Update active nav item
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
-        }
 
         // Platform toggle functionality
         function togglePlatform(platform) {
@@ -1171,6 +1153,7 @@
             });
         }, 5000);
     </script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </body>
 </html>
 

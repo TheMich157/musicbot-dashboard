@@ -16,63 +16,156 @@ const client = new Client({
 // Connect to our web server's Socket.IO
 const socket = io('http://localhost:' + (process.env.PORT || 3000));
 
-// Store active music connections and stats
+// Store active music connections and queues
 const musicConnections = new Map();
-const serverStats = new Map();
 
-// Initialize stats for a server
-function initializeServerStats(guildId) {
-    if (!serverStats.has(guildId)) {
-        serverStats.set(guildId, {
+// Track server statistics
+class ServerStats {
+    constructor(guildId) {
+        this.guildId = guildId;
+        this.stats = {
             songsPlayed: 0,
             activeUsers: 0,
             playlistCount: 0,
             totalPlaytime: 0,
             memberCount: 0,
             status: 'Bot Active'
+        };
+        this.startTime = Date.now();
+        this.currentTrack = null;
+        this.queue = [];
+    }
+
+    updateStats() {
+        const guild = client.guilds.cache.get(this.guildId);
+        if (!guild) return;
+
+        this.stats.memberCount = guild.memberCount;
+        this.stats.activeUsers = guild.members.cache.filter(member => 
+            member.presence?.status === 'online'
+        ).size;
+
+        // Calculate total playtime
+        this.stats.totalPlaytime = ((Date.now() - this.startTime) / 3600000).toFixed(1);
+
+        // Emit updated stats
+        socket.emit('bot-stats-update', {
+            serverId: this.guildId,
+            stats: this.stats
         });
+    }
+
+    addSongPlayed() {
+        this.stats.songsPlayed++;
+        this.updateStats();
+    }
+
+    setCurrentTrack(track) {
+        this.currentTrack = track;
+        socket.emit('bot-track-update', {
+            serverId: this.guildId,
+            track: track
+        });
+    }
+
+    addToQueue(track) {
+        this.queue.push(track);
+        return this.queue.length;
+    }
+
+    clearQueue() {
+        this.queue = [];
+        this.currentTrack = null;
+        this.setCurrentTrack(null);
     }
 }
 
-// Update server stats
-function updateServerStats(guildId) {
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) return;
-
-    const stats = serverStats.get(guildId);
-    if (stats) {
-        stats.memberCount = guild.memberCount;
-        stats.activeUsers = guild.members.cache.filter(member => member.presence?.status === 'online').size;
-        
-        // Emit updated stats to web dashboard
-        socket.emit('server-stats-update', {
-            serverId: guildId,
-            stats: stats
-        });
+// Initialize stats for a server
+function initializeServerStats(guildId) {
+    if (!musicConnections.has(guildId)) {
+        musicConnections.set(guildId, new ServerStats(guildId));
+        socket.emit('bot-server-join', guildId);
     }
+    return musicConnections.get(guildId);
 }
 
-// Music platform handlers
+// Handle bot commands from dashboard
+socket.on('bot-command', async (command) => {
+    const { type, serverId, data } = command;
+    const serverStats = musicConnections.get(serverId);
+    
+    if (!serverStats) return;
+
+    switch (type) {
+        case 'play':
+            await handlePlayCommand(serverId, data.query);
+            break;
+        case 'stop':
+            await handleStopCommand(serverId);
+            break;
+        case 'skip':
+            await handleSkipCommand(serverId);
+            break;
+    }
+});
+
+// Music platform handlers with real implementations
 const platforms = {
     spotify: {
         enabled: true,
         search: async (query) => {
-            // TODO: Implement Spotify search
-            return [];
+            try {
+                // Real Spotify search implementation
+                const results = await spotifyApi.searchTracks(query);
+                return results.body.tracks.items.map(track => ({
+                    title: track.name,
+                    artist: track.artists[0].name,
+                    duration: Math.floor(track.duration_ms / 1000),
+                    platform: 'spotify',
+                    uri: track.uri
+                }));
+            } catch (error) {
+                console.error('Spotify search error:', error);
+                return [];
+            }
         }
     },
     youtube: {
         enabled: true,
         search: async (query) => {
-            // TODO: Implement YouTube search
-            return [];
+            try {
+                // Real YouTube search implementation
+                const results = await ytSearch(query);
+                return results.videos.slice(0, 5).map(video => ({
+                    title: video.title,
+                    artist: video.author.name,
+                    duration: video.duration.seconds,
+                    platform: 'youtube',
+                    uri: video.url
+                }));
+            } catch (error) {
+                console.error('YouTube search error:', error);
+                return [];
+            }
         }
     },
     soundcloud: {
         enabled: false,
         search: async (query) => {
-            // TODO: Implement SoundCloud search
-            return [];
+            try {
+                // Real SoundCloud search implementation
+                const results = await soundcloud.search({ q: query, type: 'tracks' });
+                return results.collection.map(track => ({
+                    title: track.title,
+                    artist: track.user.username,
+                    duration: Math.floor(track.duration / 1000),
+                    platform: 'soundcloud',
+                    uri: track.permalink_url
+                }));
+            } catch (error) {
+                console.error('SoundCloud search error:', error);
+                return [];
+            }
         }
     }
 };
@@ -92,63 +185,115 @@ function incrementSongStats(guildId) {
     }
 }
 
-// Bot commands handler
+// Command handlers
+async function handlePlayCommand(guildId, query, message = null) {
+    try {
+        const serverStats = initializeServerStats(guildId);
+        
+        // Search across enabled platforms
+        let tracks = [];
+        for (const [platform, handler] of Object.entries(platforms)) {
+            if (handler.enabled) {
+                const results = await handler.search(query);
+                tracks = [...tracks, ...results];
+            }
+        }
+
+        if (tracks.length === 0) {
+            if (message) message.reply('No tracks found!');
+            return;
+        }
+
+        const track = tracks[0];
+        serverStats.addToQueue(track);
+        
+        if (!serverStats.currentTrack) {
+            serverStats.setCurrentTrack(track);
+            serverStats.addSongPlayed();
+        }
+
+        if (message) {
+            message.reply(`Added to queue: ${track.title} by ${track.artist}`);
+        }
+
+        return track;
+    } catch (error) {
+        console.error('Play command error:', error);
+        if (message) message.reply('Failed to play the track. Please try again.');
+    }
+}
+
+async function handleStopCommand(guildId, message = null) {
+    try {
+        const serverStats = musicConnections.get(guildId);
+        if (serverStats) {
+            serverStats.clearQueue();
+            if (message) message.reply('Playback stopped.');
+        }
+    } catch (error) {
+        console.error('Stop command error:', error);
+        if (message) message.reply('Failed to stop playback.');
+    }
+}
+
+async function handleSkipCommand(guildId, message = null) {
+    try {
+        const serverStats = musicConnections.get(guildId);
+        if (serverStats && serverStats.queue.length > 0) {
+            const nextTrack = serverStats.queue.shift();
+            serverStats.setCurrentTrack(nextTrack);
+            serverStats.addSongPlayed();
+            if (message) message.reply(`Now playing: ${nextTrack.title}`);
+        } else {
+            if (message) message.reply('No more tracks in queue.');
+        }
+    } catch (error) {
+        console.error('Skip command error:', error);
+        if (message) message.reply('Failed to skip track.');
+    }
+}
+
+// Discord message commands handler
 const commands = {
     play: async (message, args) => {
         try {
-            const query = args.join(' ');
-            const guildId = message.guild.id;
-            
-            // Initialize stats if needed
-            initializeServerStats(guildId);
-            
-            // Search across enabled platforms
-            let tracks = [];
-            for (const [platform, handler] of Object.entries(platforms)) {
-                if (handler.enabled) {
-                    const results = await handler.search(query);
-                    tracks = [...tracks, ...results];
-                }
-            }
-
-            if (tracks.length === 0) {
-                return message.reply('No tracks found!');
-            }
-
-            // Update stats and emit to dashboard
-            incrementSongStats(guildId);
-            
-            // Update the current track in the web dashboard
-            socket.emit('update-track', {
-                serverId: guildId,
-                track: tracks[0]
-            });
-
-            message.reply(`Now playing: ${tracks[0].title}`);
+            await handlePlayCommand(message.guild.id, args.join(' '), message);
         } catch (error) {
             console.error('Error in play command:', error);
             message.reply('Failed to play the track. Please try again.');
         }
     },
 
-    stop: (message) => {
-        const guildId = message.guild.id;
-        // TODO: Implement stop logic
-        socket.emit('update-track', {
-            serverId: guildId,
-            track: null
-        });
-        message.reply('Playback stopped.');
+    stop: async (message) => {
+        try {
+            await handleStopCommand(message.guild.id, message);
+        } catch (error) {
+            console.error('Error in stop command:', error);
+            message.reply('Failed to stop playback.');
+        }
     },
 
-    skip: (message) => {
-        // TODO: Implement skip logic
-        message.reply('Skipped to next track.');
+    skip: async (message) => {
+        try {
+            await handleSkipCommand(message.guild.id, message);
+        } catch (error) {
+            console.error('Error in skip command:', error);
+            message.reply('Failed to skip track.');
+        }
     },
 
     queue: (message) => {
-        // TODO: Implement queue display
-        message.reply('Queue is empty.');
+        const serverStats = musicConnections.get(message.guild.id);
+        if (!serverStats || serverStats.queue.length === 0) {
+            message.reply('Queue is empty.');
+            return;
+        }
+
+        const queueList = serverStats.queue
+            .map((track, index) => `${index + 1}. ${track.title} - ${track.artist}`)
+            .join('\n');
+        
+        message.reply(`Current queue:\n${queueList}`);
     }
 };
 
@@ -159,14 +304,14 @@ client.on('ready', () => {
     
     // Initialize stats for all current servers
     client.guilds.cache.forEach(guild => {
-        initializeServerStats(guild.id);
-        updateServerStats(guild.id);
+        const stats = initializeServerStats(guild.id);
+        stats.updateStats();
     });
 
     // Set up periodic stats updates
     setInterval(() => {
-        client.guilds.cache.forEach(guild => {
-            updateServerStats(guild.id);
+        musicConnections.forEach(stats => {
+            stats.updateStats();
         });
     }, 30000); // Update every 30 seconds
 });

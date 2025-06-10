@@ -1,0 +1,1174 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicBot - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/styles.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #121212;
+            --bg-card: #1a1a1a;
+            --bg-hover: #282828;
+            --accent-primary: #1db954;
+            --accent-secondary: #ff6b35;
+            --accent-gradient: linear-gradient(135deg, #1db954, #1ed760);
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --text-muted: #6b7280;
+            --border: #2a2a2a;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            block-size: 100vh;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg-secondary);
+            padding: 2rem 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            padding: 0 2rem;
+            margin-block-end: 2rem;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-inline-end: 0.5rem;
+        }
+
+        .logo h1 {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .nav-section {
+            margin-block-end: 2rem;
+        }
+
+        .nav-title {
+            padding: 0 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-block-end: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-inline-start: 3px solid transparent;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-inline-start-color: var(--accent-primary);
+        }
+
+        .nav-item i {
+            inline-size: 24px;
+            margin-inline-end: 1rem;
+            font-size: 1.1rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: var(--bg-primary);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-block-end: 2rem;
+        }
+
+        .server-selector {
+            display: flex;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-block-end: 2rem;
+        }
+
+        .server-avatar {
+            inline-size: 48px;
+            block-size: 48px;
+            border-radius: 50%;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-inline-end: 1rem;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .server-info h2 {
+            font-weight: 600;
+            margin-block-end: 0.25rem;
+        }
+
+        .server-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .content-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-block-end: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-block-end: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title i {
+            margin-inline-end: 0.75rem;
+            color: var(--accent-primary);
+        }
+
+        /* Platform Toggles */
+        .platform-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .platform-card {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .platform-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .platform-card.enabled {
+            border-color: var(--accent-primary);
+            background: linear-gradient(135deg, rgba(29, 185, 84, 0.1), rgba(30, 215, 96, 0.05));
+        }
+
+        .platform-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-block-end: 1rem;
+        }
+
+        .platform-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .platform-icon {
+            inline-size: 40px;
+            block-size: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-inline-end: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .spotify-icon { background: #1db954; }
+        .youtube-icon { background: #ff0000; }
+        .soundcloud-icon { background: #ff6600; }
+        .apple-icon { background: linear-gradient(135deg, #fa233b, #fb5c74); }
+
+        .toggle-switch {
+            position: relative;
+            inline-size: 50px;
+            block-size: 24px;
+            background: var(--bg-hover);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-primary);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset-block-start: 2px;
+            inset-inline-start: 2px;
+            inline-size: 20px;
+            block-size: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        /* AI Preferences */
+        .ai-config {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .mood-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .mood-option {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mood-option:hover {
+            transform: scale(1.05);
+        }
+
+        .mood-option.selected {
+            border-color: var(--accent-primary);
+            background: rgba(29, 185, 84, 0.1);
+        }
+
+        .mood-option i {
+            font-size: 1.5rem;
+            margin-block-end: 0.5rem;
+            display: block;
+        }
+
+        /* Playlist Section */
+        .playlist-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-block-end: 1.5rem;
+        }
+
+        .btn {
+            background: var(--accent-gradient);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+        }
+
+        .playlist-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .playlist-item {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .playlist-item:hover {
+            background: var(--bg-hover);
+            transform: translateX(4px);
+        }
+
+        .playlist-cover {
+            inline-size: 60px;
+            block-size: 60px;
+            border-radius: 8px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .playlist-info {
+            flex: 1;
+        }
+
+        .playlist-name {
+            font-weight: 600;
+            margin-block-end: 0.25rem;
+        }
+
+        .playlist-stats {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .now-playing {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-block-end: 2rem;
+            text-align: center;
+        }
+
+        .album-art {
+            inline-size: 200px;
+            block-size: 200px;
+            border-radius: 12px;
+            background: var(--accent-gradient);
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .track-info h3 {
+            font-weight: 700;
+            margin-block-end: 0.5rem;
+        }
+
+        .track-artist {
+            color: var(--text-secondary);
+            margin-block-end: 1.5rem;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-block-end: 1.5rem;
+        }
+
+        .control-btn {
+            inline-size: 48px;
+            block-size: 48px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            background: var(--accent-primary);
+            transform: scale(1.1);
+        }
+
+        .control-btn.play {
+            inline-size: 64px;
+            block-size: 64px;
+            background: var(--accent-gradient);
+            font-size: 1.5rem;
+        }
+
+        .progress-bar {
+            background: var(--bg-secondary);
+            block-size: 4px;
+            border-radius: 2px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--accent-gradient);
+            block-size: 100%;
+            inline-size: 35%;
+            transition: width 0.3s ease;
+        }
+
+        .queue-section {
+            margin-block-start: 2rem;
+        }
+
+        .queue-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-block-end: 1rem;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin-block-end: 0.5rem;
+        }
+
+        .queue-item:hover {
+            background: var(--bg-card);
+        }
+
+        .queue-thumb {
+            inline-size: 40px;
+            block-size: 40px;
+            border-radius: 6px;
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .queue-info {
+            flex: 1;
+        }
+
+        .queue-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-block-end: 0.25rem;
+        }
+
+        .queue-artist {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive Design */
+        @media (max-inline-size: 1200px) {
+            .dashboard {
+                grid-template-columns: 240px 1fr 280px;
+            }
+        }
+
+        @media (max-inline-size: 968px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            
+            .sidebar, .right-panel {
+                display: none;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .content-section {
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Statistics Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-block-end: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-block-end: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fas fa-music"></i>
+                <h1>MusicBot Pro</h1>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Dashboard</div>
+                <a href="#" class="nav-item active" data-section="overview">
+                    <i class="fas fa-chart-line"></i>
+                    Overview
+                </a>
+                <a href="#" class="nav-item" data-section="platforms">
+                    <i class="fas fa-toggle-on"></i>
+                    Platforms
+                </a>
+                <a href="#" class="nav-item" data-section="playlists">
+                    <i class="fas fa-list-music"></i>
+                    Playlists
+                </a>
+                <a href="#" class="nav-item" data-section="ai-config">
+                    <i class="fas fa-robot"></i>
+                    AI Config
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Bot Controls</div>
+                <a href="#" class="nav-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+                <a href="#" class="nav-item" data-section="permissions">
+                    <i class="fas fa-shield-alt"></i>
+                    Permissions
+                </a>
+                <a href="#" class="nav-item" data-section="logs">
+                    <i class="fas fa-file-alt"></i>
+                    Logs
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Support</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-question-circle"></i>
+                    Help Center
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-life-ring"></i>
+                    Support
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="server-selector">
+                <div class="server-avatar">MG</div>
+                <div class="server-info">
+                    <h2>Music Galaxy</h2>
+                    <p>1,234 members • Bot Active</p>
+                </div>
+            </div>
+
+            <!-- Overview Section -->
+            <div id="overview-section" class="section-content">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">2,847</div>
+                        <div class="stat-label">Songs Played Today</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">156</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">48</div>
+                        <div class="stat-label">Created Playlists</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">12.4h</div>
+                        <div class="stat-label">Total Playtime</div>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="section-title">
+                        <i class="fas fa-fire"></i>
+                        Quick Actions
+                    </div>
+                    <div class="platform-grid">
+                        <button class="btn" onclick="showSection('platforms')">
+                            <i class="fas fa-toggle-on"></i>
+                            Manage Platforms
+                        </button>
+                        <button class="btn btn-secondary" onclick="showSection('ai-config')">
+                            <i class="fas fa-robot"></i>
+                            Configure AI
+                        </button>
+                        <button class="btn btn-secondary" onclick="showSection('playlists')">
+                            <i class="fas fa-plus"></i>
+                            Create Playlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platforms Section -->
+            <div id="platforms-section" class="section-content" style="display: none;">
+                <div class="content-section">
+                    <div class="section-title">
+                        <i class="fas fa-toggle-on"></i>
+                        Music Platform Settings
+                    </div>
+                    <p class="text-secondary" style="margin-block-end: 2rem;">Enable or disable music platforms for your server. When enabled, users can play music from these sources.</p>
+                    
+                    <div class="platform-grid">
+                        <div class="platform-card enabled" data-platform="spotify">
+                            <div class="platform-header">
+                                <div class="platform-info">
+                                    <div class="platform-icon spotify-icon">
+                                        <i class="fab fa-spotify"></i>
+                                    </div>
+                                    <div>
+                                        <h3>Spotify</h3>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">High-quality streaming</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="togglePlatform('spotify')">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            <div class="platform-stats">
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-play-circle" style="margin-inline-end: 0.5rem;"></i>
+                                    1,234 songs played this week
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="platform-card enabled" data-platform="youtube">
+                            <div class="platform-header">
+                                <div class="platform-info">
+                                    <div class="platform-icon youtube-icon">
+                                        <i class="fab fa-youtube"></i>
+                                    </div>
+                                    <div>
+                                        <h3>YouTube</h3>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Unlimited music library</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch active" onclick="togglePlatform('youtube')">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            <div class="platform-stats">
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-play-circle" style="margin-inline-end: 0.5rem;"></i>
+                                    2,847 songs played this week
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="platform-card" data-platform="soundcloud">
+                            <div class="platform-header">
+                                <div class="platform-info">
+                                    <div class="platform-icon soundcloud-icon">
+                                        <i class="fab fa-soundcloud"></i>
+                                    </div>
+                                    <div>
+                                        <h3>SoundCloud</h3>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Discover underground music</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch" onclick="togglePlatform('soundcloud')">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            <div class="platform-stats">
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-pause-circle" style="margin-inline-end: 0.5rem;"></i>
+                                    Disabled
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="platform-card" data-platform="apple">
+                            <div class="platform-header">
+                                <div class="platform-info">
+                                    <div class="platform-icon apple-icon">
+                                        <i class="fab fa-apple"></i>
+                                    </div>
+                                    <div>
+                                        <h3>Apple Music</h3>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Premium audio quality</p>
+                                    </div>
+                                </div>
+                                <div class="toggle-switch" onclick="togglePlatform('apple')">
+                                    <div class="toggle-slider"></div>
+                                </div>
+                            </div>
+                            <div class="platform-stats">
+                                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-pause-circle" style="margin-inline-end: 0.5rem;"></i>
+                                    Disabled
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Configuration Section -->
+            <div id="ai-config-section" class="section-content" style="display: none;">
+                <div class="content-section">
+                    <div class="section-title">
+                        <i class="fas fa-robot"></i>
+                        AI Music Preferences
+                    </div>
+                    <p class="text-secondary" style="margin-block-end: 2rem;">Configure AI to automatically select music based on server mood and user preferences.</p>
+                    
+                    <div class="ai-config">
+                        <div>
+                            <h3 style="margin-block-end: 1rem; font-weight: 600;">Music Mood Selection</h3>
+                            <div class="mood-selector">
+                                <div class="mood-option selected" data-mood="energetic">
+                                    <i class="fas fa-bolt" style="color: #ff6b35;"></i>
+                                    <div>Energetic</div>
+                                </div>
+                                <div class="mood-option" data-mood="chill">
+                                    <i class="fas fa-leaf" style="color: #48cc6c;"></i>
+                                    <div>Chill</div>
+                                </div>
+                                <div class="mood-option selected" data-mood="party">
+                                    <i class="fas fa-music" style="color: #8b5cf6;"></i>
+                                    <div>Party</div>
+                                </div>
+                                <div class="mood-option" data-mood="focus">
+                                    <i class="fas fa-brain" style="color: #3b82f6;"></i>
+                                    <div>Focus</div>
+                                </div>
+                                <div class="mood-option" data-mood="romantic">
+                                    <i class="fas fa-heart" style="color: #f56565;"></i>
+                                    <div>Romantic</div>
+                                </div>
+                                <div class="mood-option" data-mood="workout">
+                                    <i class="fas fa-dumbbell" style="color: #ff8c00;"></i>
+                                    <div>Workout</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 style="margin-block-end: 1rem; font-weight: 600;">AI Behavior Settings</h3>
+                            <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px;">
+                                <div style="display: flex; justify-content: between; align-items: center; margin-block-end: 1rem;">
+                                    <div>
+                                        <strong>Auto-DJ Mode</strong>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Let AI continuously play music based on preferences</p>
+                                    </div>
+                                    <div class="toggle-switch active">
+                                        <div class="toggle-slider"></div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: between; align-items: center; margin-block-end: 1rem;">
+                                    <div>
+                                        <strong>Learn from Skips</strong>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">AI learns from songs that users skip frequently</p>
+                                    </div>
+                                    <div class="toggle-switch active">
+                                        <div class="toggle-slider"></div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: between; align-items: center;">
+                                    <div>
+                                        <strong>Time-based Selection</strong>
+                                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Choose different music based on time of day</p>
+                                    </div>
+                                    <div class="toggle-switch">
+                                        <div class="toggle-slider"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlists Section -->
+            <div id="playlists-section" class="section-content" style="display: none;">
+                <div class="content-section">
+                    <div class="playlist-header">
+                        <div class="section-title">
+                            <i class="fas fa-list-music"></i>
+                            Server Playlists
+                        </div>
+                        <button class="btn" onclick="createPlaylist()">
+                            <i class="fas fa-plus"></i>
+                            Create New Playlist
+                        </button>
+                    </div>
+                    
+                    <div class="playlist-list">
+                        <div class="playlist-item">
+                            <div class="playlist-cover">
+                                <i class="fas fa-fire"></i>
+                            </div>
+                            <div class="playlist-info">
+                                <div class="playlist-name">🔥 Server Favorites</div>
+                                <div class="playlist-stats">42 songs • Created by AI • 2.3k plays</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="control-btn" title="Play">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="control-btn" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="playlist-item">
+                            <div class="playlist-cover">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <div class="playlist-info">
+                                <div class="playlist-name">🌙 Late Night Vibes</div>
+                                <div class="playlist-stats">28 songs • Created by @MusicLover • 1.8k plays</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="control-btn" title="Play">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="control-btn" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="playlist-item">
+                            <div class="playlist-cover">
+                                <i class="fas fa-dumbbell"></i>
+                            </div>
+                            <div class="playlist-info">
+                                <div class="playlist-name">💪 Workout Mix</div>
+                                <div class="playlist-stats">56 songs • Created by AI • 3.1k plays</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="control-btn" title="Play">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="control-btn" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="playlist-item">
+                            <div class="playlist-cover">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="playlist-info">
+                                <div class="playlist-name">❤️ Love Songs Collection</div>
+                                <div class="playlist-stats">34 songs • Created by @RomanticSoul • 967 plays</div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button class="control-btn" title="Play">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                <button class="control-btn" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <div class="now-playing">
+                <div class="album-art">
+                    <i class="fas fa-music"></i>
+                </div>
+                <div class="track-info">
+                    <h3>Blinding Lights</h3>
+                    <p class="track-artist">The Weeknd</p>
+                </div>
+                <div class="controls">
+                    <button class="control-btn">
+                        <i class="fas fa-step-backward"></i>
+                    </button>
+                    <button class="control-btn play">
+                        <i class="fas fa-pause"></i>
+                    </button>
+                    <button class="control-btn">
+                        <i class="fas fa-step-forward"></i>
+                    </button>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div style="display: flex; justify-content: between; font-size: 0.8rem; color: var(--text-secondary);">
+                    <span>1:23</span>
+                    <span>3:45</span>
+                </div>
+            </div>
+
+            <div class="queue-section">
+                <div class="queue-header">
+                    <h3 style="font-weight: 600;">Up Next</h3>
+                    <button class="btn btn-secondary" style="padding: 0.5rem;">
+                        <i class="fas fa-random"></i>
+                    </button>
+                </div>
+                
+                <div class="queue-item">
+                    <div class="queue-thumb">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="queue-info">
+                        <div class="queue-title">Stay</div>
+                        <div class="queue-artist">The Kid LAROI, Justin Bieber</div>
+                    </div>
+                </div>
+
+                <div class="queue-item">
+                    <div class="queue-thumb">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="queue-info">
+                        <div class="queue-title">Good 4 U</div>
+                        <div class="queue-artist">Olivia Rodrigo</div>
+                    </div>
+                </div>
+
+                <div class="queue-item">
+                    <div class="queue-thumb">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="queue-info">
+                        <div class="queue-title">Levitating</div>
+                        <div class="queue-artist">Dua Lipa</div>
+                    </div>
+                </div>
+
+                <div class="queue-item">
+                    <div class="queue-thumb">
+                        <i class="fas fa-music"></i>
+                    </div>
+                    <div class="queue-info">
+                        <div class="queue-title">Heat Waves</div>
+                        <div class="queue-artist">Glass Animals</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script src="/app.js" defer></script>
+    <script>
+        // Navigation functionality
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+        }
+
+        // Platform toggle functionality
+        function togglePlatform(platform) {
+            const platformCard = document.querySelector(`[data-platform="${platform}"]`);
+            const toggleSwitch = platformCard.querySelector('.toggle-switch');
+            
+            toggleSwitch.classList.toggle('active');
+            platformCard.classList.toggle('enabled');
+            
+            // Update stats text
+            const statsText = platformCard.querySelector('.platform-stats p');
+            if (platformCard.classList.contains('enabled')) {
+                const playCount = Math.floor(Math.random() * 3000) + 500;
+                statsText.innerHTML = `<i class="fas fa-play-circle" style="margin-inline-end: 0.5rem;"></i>${playCount} songs played this week`;
+            } else {
+                statsText.innerHTML = `<i class="fas fa-pause-circle" style="margin-inline-end: 0.5rem;"></i>Disabled`;
+            }
+        }
+
+        // Mood selection functionality
+        document.querySelectorAll('.mood-option').forEach(option => {
+            option.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+        });
+
+        // Navigation event listeners
+        document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = this.getAttribute('data-section');
+                showSection(section);
+            });
+        });
+
+        // Playlist creation functionality
+        function createPlaylist() {
+            const playlistName = prompt('Enter playlist name:');
+            if (playlistName) {
+                const playlistList = document.querySelector('.playlist-list');
+                const newPlaylistHTML = `
+                    <div class="playlist-item">
+                        <div class="playlist-cover">
+                            <i class="fas fa-music"></i>
+                        </div>
+                        <div class="playlist-info">
+                            <div class="playlist-name">${playlistName}</div>
+                            <div class="playlist-stats">0 songs • Just created • 0 plays</div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button class="control-btn" title="Play">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="control-btn" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                playlistList.insertAdjacentHTML('beforeend', newPlaylistHTML);
+            }
+        }
+
+        // Music controls functionality
+        let isPlaying = true;
+        document.querySelector('.control-btn.play').addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            if (isPlaying) {
+                icon.className = 'fas fa-play';
+                this.closest('.now-playing').querySelector('.album-art').style.animationPlayState = 'paused';
+            } else {
+                icon.className = 'fas fa-pause';
+                this.closest('.now-playing').querySelector('.album-art').style.animationPlayState = 'running';
+            }
+            isPlaying = !isPlaying;
+        });
+
+        // Progress bar animation
+        setInterval(() => {
+            if (isPlaying) {
+                const progressFill = document.querySelector('.progress-fill');
+                let currentWidth = parseInt(progressFill.style.width) || 35;
+                currentWidth += 0.5;
+                if (currentWidth > 100) currentWidth = 0;
+                progressFill.style.width = currentWidth + '%';
+            }
+        }, 1000);
+
+        // Toggle switches functionality
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                if (!this.onclick) { // Only handle generic toggles
+                    this.classList.toggle('active');
+                }
+            });
+        });
+
+        // Add some dynamic stats updates
+        setInterval(() => {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(stat => {
+                if (stat.textContent.includes(',')) {
+                    let currentValue = parseInt(stat.textContent.replace(',', ''));
+                    currentValue += Math.floor(Math.random() * 10) + 1;
+                    stat.textContent = currentValue.toLocaleString();
+                }
+            });
+        }, 5000);
+    </script>
+</body>
+</html>
+

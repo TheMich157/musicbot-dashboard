@@ -35,6 +35,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'signin.html'));
 });
 
+// Serve signup.html at /signup
+app.get('/signup', (req, res) => {
+    res.sendFile(path.join(__dirname, 'signup.html'));
+});
+
 // Sign-in route
 app.post('/signin', (req, res) => {
     const { username, password } = req.body;
@@ -45,6 +50,23 @@ app.post('/signin', (req, res) => {
     } else {
         res.status(401).send('Authentication failed');
     }
+});
+
+// Signup route
+app.post('/signup', (req, res) => {
+    const { email, username, password, confirmPassword } = req.body;
+    if (!email || !username || !password || !confirmPassword) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+    if (password !== confirmPassword) {
+        return res.status(400).json({ error: 'Passwords do not match' });
+    }
+    if (!req.session.discordLinked) {
+        return res.status(401).json({ error: 'Discord account must be linked', requiresDiscordLink: true });
+    }
+    // TODO: Save the new user into the database (dummy logic for now)
+    req.session.user = { email, username, discord: req.session.discordData };
+    res.json({ success: true });
 });
 
 // Serve index.html only to authenticated users

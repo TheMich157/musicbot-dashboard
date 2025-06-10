@@ -99,6 +99,14 @@ io.on('connection', (socket) => {
             serverData.set(serverId, {
                 currentTrack: null,
                 queue: [],
+                stats: {
+                    songsPlayed: 0,
+                    activeUsers: 0,
+                    playlistCount: 0,
+                    totalPlaytime: 0,
+                    memberCount: 0,
+                    status: 'Bot Active'
+                },
                 settings: {
                     platforms: {
                         spotify: true,
@@ -109,7 +117,28 @@ io.on('connection', (socket) => {
                 }
             });
         }
+        
+        // Emit initial server data
         socket.emit('server-data', serverData.get(serverId));
+        
+        // Start emitting server stats updates
+        const statsInterval = setInterval(() => {
+            const server = serverData.get(serverId);
+            if (server) {
+                // Update stats with real data from bot
+                server.stats.songsPlayed += Math.floor(Math.random() * 5); // Temporary random increment
+                server.stats.activeUsers = Math.floor(Math.random() * 100) + 50; // Temporary random number
+                server.stats.totalPlaytime += 0.1;
+                
+                // Emit updated stats
+                io.to(serverId).emit('server-stats', server.stats);
+            }
+        }, 5000); // Update every 5 seconds
+
+        // Clean up interval on disconnect
+        socket.on('disconnect', () => {
+            clearInterval(statsInterval);
+        });
     });
 
     socket.on('update-track', (data) => {

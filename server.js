@@ -12,18 +12,45 @@ const io = socketIo(server);
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve index.html for all routes
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { secure: false } // Allow non-HTTPS for development
 }));
+
+// Authentication middleware
+const requireAuth = (req, res, next) => {
+    if (req.session && req.session.user) {
+        next();
+    } else {
+        res.redirect('/');
+    }
+};
+
+// Serve signin.html at the root path
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'signin.html'));
+});
+
+// Sign-in route
+app.post('/signin', (req, res) => {
+    const { username, password } = req.body;
+    // Replace with your authentication logic
+    if (username === 'user' && password === 'password') {
+        req.session.user = { username: username };
+        res.redirect('/index.html');
+    } else {
+        res.status(401).send('Authentication failed');
+    }
+});
+
+// Serve index.html only to authenticated users
+app.get('/index.html', requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // Store connected clients and their data
 const connectedClients = new Map();
@@ -86,7 +113,7 @@ app.get('/auth/discord/callback', async (req, res) => {
         });
 
         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
         });
 
         const userResponse = await axios.get('https://discord.com/api/users/@me', {
@@ -102,41 +129,20 @@ app.get('/auth/discord/callback', async (req, res) => {
     }
 });
 
-// API Routes
-app.get('/api/user', (req, res) => {
-    if (!req.session.user) {
-        // Return empty user object instead of error
-        return res.json({ 
-            authenticated: false,
-            user: null
-        });
-    }
+// API Routes - require authentication
+app.get('/api/user', requireAuth, (req, res) => {
     res.json({
         authenticated: true,
         user: req.session.user
     });
 });
 
-app.post('/api/playlist', (req, res) => {
-    if (!req.session.user) {
-        return res.json({ 
-            success: false, 
-            error: 'Authentication required',
-            requiresAuth: true 
-        });
-    }
+app.post('/api/playlist', requireAuth, (req, res) => {
     // TODO: Implement playlist creation logic
     res.json({ success: true });
 });
 
-app.post('/api/platform/toggle', (req, res) => {
-    if (!req.session.user) {
-        return res.json({ 
-            success: false, 
-            error: 'Authentication required',
-            requiresAuth: true 
-        });
-    }
+app.post('/api/platform/toggle', requireAuth, (req, res) => {
     const { platform, enabled } = req.body;
     // TODO: Implement platform toggle logic
     res.json({ success: true });

@@ -180,24 +180,39 @@ async function createPlaylist() {
 
 // Music Controls
 function togglePlayback() {
-    if (!state.currentTrack) return;
+    if (!state.currentTrack) {
+        showNotification('No track selected', 'error');
+        return;
+    }
 
     const icon = elements.playButton.querySelector('i');
     if (state.isPlaying) {
+        socket.emit('stop-playback', currentServerId);
         icon.className = 'fas fa-play';
         elements.albumArt.style.animationPlayState = 'paused';
     } else {
+        if (state.currentTrack) {
+            socket.emit('play-track', {
+                serverId: currentServerId,
+                query: `${state.currentTrack.title} ${state.currentTrack.artist}`
+            });
+        }
         icon.className = 'fas fa-pause';
         elements.albumArt.style.animationPlayState = 'running';
     }
     state.isPlaying = !state.isPlaying;
-
-    // Emit playback state change to server
-    socket.emit('playback-update', {
-        serverId: currentServerId,
-        isPlaying: state.isPlaying
-    });
 }
+
+// Add skip functionality
+elements.skipButton?.addEventListener('click', () => {
+    if (!currentServerId) return;
+    socket.emit('skip-track', currentServerId);
+});
+
+// Add previous track functionality
+elements.prevButton?.addEventListener('click', () => {
+    showNotification('Previous track feature coming soon', 'info');
+});
 
 // Socket.IO Event Handlers
 socket.on('connect', () => {
@@ -208,45 +223,52 @@ socket.on('connect', () => {
 });
 
 // Handle server stats updates
-socket.on('server-stats', (stats) => {
-    // Update server info
-    const serverStats = document.getElementById('server-stats');
-    if (serverStats) {
-        serverStats.textContent = `${stats.memberCount} members • ${stats.status}`;
-    }
 
-    // Update stat cards
-    const songsPlayed = document.getElementById('songs-played');
-    if (songsPlayed) {
-        songsPlayed.textContent = stats.songsPlayed.toLocaleString();
-    }
-
-    const activeUsers = document.getElementById('active-users');
-    if (activeUsers) {
-        activeUsers.textContent = stats.activeUsers.toLocaleString();
-    }
-
-    const playlistCount = document.getElementById('playlist-count');
-    if (playlistCount) {
-        playlistCount.textContent = stats.playlistCount.toLocaleString();
-    }
-
-    const totalPlaytime = document.getElementById('total-playtime');
-    if (totalPlaytime) {
-        totalPlaytime.textContent = `${stats.totalPlaytime.toFixed(1)}h`;
-    }
-});
-
+// Handle track updates
 socket.on('track-update', (track) => {
     state.currentTrack = track;
     updateNowPlaying(track);
+    if (track) {
+        showNotification(`Now playing: ${track.title} by ${track.artist}`, 'info');
+    }
 });
 
+// Handle server data updates
 socket.on('server-data', (data) => {
     state.serverSettings = data.settings;
     state.currentTrack = data.currentTrack;
     state.queue = data.queue;
+    state.stats = data.stats;
     updateUI();
+});
+
+// Handle server status updates
+socket.on('server-update', (update) => {
+    const { type, serverId } = update;
+    if (type === 'join') {
+        showNotification(`Bot joined server ${serverId}`, 'success');
+    } else if (type === 'leave') {
+        showNotification(`Bot left server ${serverId}`, 'info');
+    }
+    updateUI();
+});
+
+// Handle server stats updates
+socket.on('server-stats', (stats) => {
+    if (stats) {
+        // Update stats display
+        document.getElementById('songs-played').textContent = stats.songsPlayed.toLocaleString();
+        document.getElementById('active-users').textContent = stats.activeUsers.toLocaleString();
+        document.getElementById('playlist-count').textContent = stats.playlistCount.toLocaleString();
+        document.getElementById('total-playtime').textContent = `${stats.totalPlaytime}h`;
+        document.getElementById('server-stats').textContent = 
+            `${stats.memberCount} members • ${stats.status}`;
+    }
+});
+
+// Handle errors
+socket.on('error', (error) => {
+    showNotification(error.message, 'error');
 });
 
 // UI Updates

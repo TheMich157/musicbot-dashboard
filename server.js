@@ -4,11 +4,15 @@ const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
 const axios = require('axios');
+const { ConvexHttpClient } = require('convex/server');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+// Initialize Convex client
+const convex = new ConvexHttpClient(process.env.CONVEX_URL);
 
 // Middleware
 app.use(express.json());
@@ -111,45 +115,55 @@ app.get('/api/server/:serverId', (req, res) => {
     });
 });
 
-// Discord OAuth routes
-app.get('/auth/discord', (req, res) => {
-    const baseUrl = 'https://discord.com/api/oauth2/authorize';
-    const params = new URLSearchParams({
-        client_id: process.env.DISCORD_CLIENT_ID,
-        redirect_uri: process.env.DISCORD_REDIRECT_URI,
-        response_type: 'code',
-        scope: 'identify guilds'
-    });
-    res.redirect(`${baseUrl}?${params.toString()}`);
-});
+ // Discord OAuth routes
+ app.get('/auth/discord', (req, res) => {
+     const baseUrl = 'https://discord.com/api/oauth2/authorize';
+     const params = new URLSearchParams({
+         client_id: process.env.DISCORD_CLIENT_ID,
+         redirect_uri: process.env.DISCORD_REDIRECT_URI,
+         response_type: 'code',
+         scope: 'identify guilds'
+     });
+     // Pass along redirect query param if present
+     if (req.query.redirect) {
+         params.append('state', req.query.redirect);
+     }
+     res.redirect(`${baseUrl}?${params.toString()}`);
+ });
 
-app.get('/auth/discord/callback', async (req, res) => {
-    try {
-        const { code } = req.query;
-        const params = new URLSearchParams({
-            client_id: process.env.DISCORD_CLIENT_ID,
-            client_secret: process.env.DISCORD_CLIENT_SECRET,
-            grant_type: 'authorization_code',
-            code,
-            redirect_uri: process.env.DISCORD_REDIRECT_URI
-        });
+ app.get('/auth/discord/callback', async (req, res) => {
+     try {
+         const { code, state } = req.query;
+         const params = new URLSearchParams({
+             client_id: process.env.DISCORD_CLIENT_ID,
+             client_secret: process.env.DISCORD_CLIENT_SECRET,
+             grant_type: 'authorization_code',
+             code,
+             redirect_uri: process.env.DISCORD_REDIRECT_URI
+         });
 
-        const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params, {
-            headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
-        });
+         const tokenResponse = await axios.post('https://discord.com/api/oauth2/token', params, {
+             headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+         });
 
-        const userResponse = await axios.get('https://discord.com/api/users/@me', {
-            headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
-        });
+         const userResponse = await axios.get('https://discord.com/api/users/@me', {
+             headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
+         });
 
-        req.session.user = userResponse.data;
-        req.session.token = tokenResponse.data.access_token;
-        res.redirect('/');
-    } catch (error) {
-        console.error('Discord auth error:', error);
-        res.status(500).json({ error: 'Authentication failed' });
-    }
-});
+         if (state === 'signup') {
+             req.session.discordLinked = true;
+             req.session.discordData = userResponse.data;
+             return res.redirect('/signup');
+         }
+
+         req.session.user = userResponse.data;
+         req.session.token = tokenResponse.data.access_token;
+         res.redirect('/');
+     } catch (error) {
+         console.error('Discord auth error:', error);
+         res.status(500).json({ error: 'Authentication failed' });
+     }
+ });
 
 // API Routes - require authentication
 app.get('/api/user', requireAuth, (req, res) => {
